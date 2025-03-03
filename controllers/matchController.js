@@ -3,12 +3,14 @@ const { FOOTBALL_API_URL, FOOTBALL_API_KEY } = require("../utils");
 
 const getAllMatch = async (req, res) => {
     try {
-        const response = await axios.get(`${FOOTBALL_API_URL}/competitions/PL/matches?dateFrom=2024-01-01&dateTo=2024-01-15`, {
+        // slug = 'competitions/PL/matches?dateFrom=2025-01-01&dateTo=2025-06-06&status=SCHEDULED'
+        const slug = req.query.slug
+        const response = await axios.get(`${FOOTBALL_API_URL}/${slug}`, {
             headers: { "X-Auth-Token": FOOTBALL_API_KEY },
         });
 
         res.json({
-            ...response.data,
+            data: { ...response.data },
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
