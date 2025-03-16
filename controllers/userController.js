@@ -136,6 +136,47 @@ const updateUser = async (req, res) => {
     }
 }
 
+const updateUserFavouriteTeam = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        const { id,
+            name,
+            shortName,
+            address,
+            crest,
+            tla,
+            venue,
+            website } = req.body
+
+        let user = await User.findOne({ _id: userId })
+        if (!user) {
+            return res.status(400).json({ error: 'User not found!' })
+        }
+
+        user.team = {}
+
+        user.team.id = id;
+        user.team.name = name;
+        user.team.shortName = shortName;
+        user.team.address = address;
+        user.team.crest = crest;
+        user.team.tla = tla;
+        user.team.venue = venue;
+        user.team.website = website;
+
+        user = await user.save()
+
+        user.password = null
+        res.status(200).json({
+            data: user
+        })
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+        console.log(error.message)
+    }
+}
+
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params
@@ -178,6 +219,7 @@ module.exports = {
     logoutUser,
     getAllUsers,
     updateUser,
+    updateUserFavouriteTeam,
     deleteUser,
     getUserAccount
 }
