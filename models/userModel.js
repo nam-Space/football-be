@@ -7,6 +7,16 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, required: true }, // Mức độ truy cập (user/admin)
+    team: {
+        id: Number,
+        name: String,
+        shortName: String,
+        address: String,
+        crest: String,
+        tla: String,
+        venue: String,
+        website: String
+    }
 });
 
 const User = mongoose.model('User', userSchema)
