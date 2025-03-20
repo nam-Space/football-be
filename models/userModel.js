@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, required: true }, // Mức độ truy cập (user/admin)
+    avatar: { type: String, required: false }, 
+    phone: { type: String, required: false },
     team: {
         id: Number,
         name: String,

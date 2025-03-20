@@ -2,6 +2,7 @@ const User = require("../models/userModel");
 const bcrypt = require('bcryptjs');
 const generateTokenAndSetCookie = require("../utils/generateTokenAndSetCookie");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("../utils/cloudinaryConfig");
 
 const createUser = async (req, res) => {
     try {
@@ -101,40 +102,45 @@ const getAllUsers = async (req, res) => {
 
 const updateUser = async (req, res) => {
     try {
-        const { _id,
-            name,
-            password,
-            gender,
-            address,
-            role } = req.body
+        const { id } = req.params;
+        const { password, ...updateData } = req.body;
 
-        let user = await User.findOne({ _id })
+        let user = await User.findById(id);
         if (!user) {
-            return res.status(400).json({ error: 'User not found!' })
+            return res.status(404).json({ error: "User not found!" });
         }
 
+        // Nếu có mật khẩu mới, mã hóa trước khi lưu
         if (password) {
-            const salt = await bcrypt.genSalt(10)
-            const hashedPassword = await bcrypt.hash(password, salt)
-            user.password = hashedPassword
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(password, salt);
         }
 
-        user.name = name || user.name
-        user.gender = gender || user.gender
-        user.address = address || user.address
-        user.role = role || user.role
+        // Xử lý file avatar nếu được upload
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path);
+            updateData.avatar = result.secure_url; // Trả về URL HTTP
+        }        
 
-        user = await user.save()
+        // Cập nhật user với dữ liệu từ FormData
+        Object.keys(updateData).forEach((key) => {
+            if (updateData[key] !== undefined && updateData[key] !== null) {
+                user[key] = updateData[key];
+            }
+        });
 
-        user.password = null
-        res.status(200).json({
-            data: user
-        })
+        await user.save();
+
+        // Xóa password khỏi response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(200).json({ message: "User updated successfully!", data: userResponse });
     } catch (error) {
         res.status(500).json({ error: error.message });
-        console.log(error.message)
+        console.error(error.message);
     }
-}
+};
 
 const updateUserFavouriteTeam = async (req, res) => {
     try {
