@@ -41,6 +41,40 @@ const getPlayerDetail = async (req, res) => {
     }
 }
 
+const getPlayerImage = async (req, res) => {
+    try {
+        const { playerName } = req.params;
+
+        // Use TheSportsDB API to search for the player
+        const searchUrl = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`;
+        const response = await axios.get(searchUrl);
+
+        // Check if any players were found
+        if (response.data && response.data.player && response.data.player.length > 0) {
+            // Get the first player's image
+            const playerData = response.data.player[0];
+
+            if (playerData.strThumb) {
+                // Return the image URL as JSON
+                return res.json({ imageUrl: playerData.strThumb });
+            }
+        }
+
+        // If no image found, return a default avatar URL
+        res.json({
+            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=37003C&color=fff&size=250`
+        });
+    } catch (error) {
+        console.error('Error finding player image:', error.message);
+        // Return a default avatar URL in case of error
+        res.json({
+            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(req.params.playerName)}&background=37003C&color=fff&size=250`,
+            error: error.message
+        });
+    }
+}
+
 module.exports = {
-    getPlayerDetail
+    getPlayerDetail,
+    getPlayerImage
 }

@@ -20,6 +20,36 @@ const getCompetitionStandingDetail = async (req, res) => {
     }
 }
 
+const getCompetitionMatches = async (req, res) => {
+    try {
+        const { competitionId = 2021, matchday, dateFrom, dateTo } = req.query;
+
+        const params = {};
+        if (matchday) params.matchday = matchday;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+
+        const response = await axios.get(
+            `https://api.football-data.org/v4/competitions/${competitionId}/matches`,
+            {
+                params,
+                headers: {
+                    'X-Auth-Token': FOOTBALL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching competition matches:', error);
+        res.status(500).json({
+            error: 'Failed to fetch competition matches',
+            message: error.response?.data?.message || error.message
+        });
+    }
+}
+
 module.exports = {
-    getCompetitionStandingDetail
+    getCompetitionStandingDetail,
+    getCompetitionMatches
 }
