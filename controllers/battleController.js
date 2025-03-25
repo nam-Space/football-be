@@ -1,371 +1,7 @@
-const express = require("express");
-const cors = require("cors");
-const { PORT, FOOTBALL_API_KEY, YOUTUBE_API_KEY, NEWS_DATA_API_KEY } = require("./utils");
-const app = express();
-const userRoutes = require('./routes/user')
-const matchRoutes = require('./routes/match')
-const playerRoutes = require('./routes/player')
-const newsRoutes = require('./routes/news')
-const videoRoutes = require('./routes/video');
-const teamRoutes = require('./routes/team');
-const competitionRoutes = require('./routes/competition');
-const commentRoutes = require('./routes/comment');
-const battleRoutes = require('./routes/battle');
-const cookieParser = require("cookie-parser");
-const dbConnect = require("./db/dbConnect");
 const { default: axios } = require("axios");
-const { fetchFullContent } = require("./utils/fetchFullContent");
-const { formatYouTubeDuration, formatViewCount } = require("./utils/youtube");
+const { FOOTBALL_API_KEY, YOUTUBE_API_KEY } = require("../utils");
 
-require("dotenv").config();
-dbConnect();
-
-app.use(cors());
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }))
-app.use(cookieParser());
-
-app.use('/api/users', userRoutes)
-app.use('/api/matches', matchRoutes)
-app.use('/api/players', playerRoutes)
-app.use('/api/news', newsRoutes)
-app.use('/api/videos', videoRoutes)
-app.use('/api/teams', teamRoutes)
-app.use('/api/competitions', competitionRoutes)
-app.use('/api/comments', commentRoutes)
-app.use('/api/battles', battleRoutes)
-
-
-// Modified server endpoints to work with free tier API access
-
-// Get matches for a competition (we'll filter to find the specific match)
-app.get('/api/competition-matches', async (req, res) => {
-    try {
-        const { competitionId = 2021, matchday, dateFrom, dateTo } = req.query;
-
-        const params = {};
-        if (matchday) params.matchday = matchday;
-        if (dateFrom) params.dateFrom = dateFrom;
-        if (dateTo) params.dateTo = dateTo;
-
-        const response = await axios.get(
-            `https://api.football-data.org/v4/competitions/${competitionId}/matches`,
-            {
-                params,
-                headers: {
-                    'X-Auth-Token': FOOTBALL_API_KEY
-                }
-            }
-        );
-
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching competition matches:', error);
-        res.status(500).json({
-            error: 'Failed to fetch competition matches',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-// Get team information
-app.get('/api/teams/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const response = await axios.get(`https://api.football-data.org/v4/teams/${id}`, {
-            headers: {
-                'X-Auth-Token': FOOTBALL_API_KEY,
-            }
-        });
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching team details:', error);
-        res.status(500).json({
-            error: 'Failed to fetch team details',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-// Get team matches
-app.get('/api/team-matches/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status = 'SCHEDULED', limit = 10 } = req.query;
-
-        const response = await axios.get(
-            `https://api.football-data.org/v4/teams/${id}/matches`,
-            {
-                params: {
-                    status,
-                    limit
-                },
-                headers: {
-                    'X-Auth-Token': FOOTBALL_API_KEY
-                }
-            }
-        );
-
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching team matches:', error);
-        res.status(500).json({
-            error: 'Failed to fetch team matches',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-// Get competition teams (to get team crests and info)
-app.get('/api/competition-teams', async (req, res) => {
-    try {
-        const { competitionId = 2021 } = req.query;
-
-        const response = await axios.get(
-            `https://api.football-data.org/v4/competitions/${competitionId}/teams`,
-            {
-                headers: {
-                    'X-Auth-Token': FOOTBALL_API_KEY,
-                }
-            }
-        );
-
-        res.json(response.data);
-    } catch (error) {
-        console.error('Error fetching competition teams:', error);
-        res.status(500).json({
-            error: 'Failed to fetch competition teams',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-app.get('/api/player-image/:playerName', async (req, res) => {
-    try {
-        const { playerName } = req.params;
-
-        // Use TheSportsDB API to search for the player
-        const searchUrl = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`;
-        const response = await axios.get(searchUrl);
-
-        // Check if any players were found
-        if (response.data && response.data.player && response.data.player.length > 0) {
-            // Get the first player's image
-            const playerData = response.data.player[0];
-
-            if (playerData.strThumb) {
-                // If the player has an image, redirect to it
-                return res.redirect(playerData.strThumb);
-            }
-        }
-
-        // If no image found, return a 404
-        res.status(404).send('Player image not found');
-    } catch (error) {
-        console.error('Error finding player image:', error.message);
-        res.status(500).send('Error finding player image');
-    }
-});
-
-app.get('/api/player-image-url/:playerName', async (req, res) => {
-    try {
-        const { playerName } = req.params;
-
-        // Use TheSportsDB API to search for the player
-        const searchUrl = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(playerName)}`;
-        const response = await axios.get(searchUrl);
-
-        // Check if any players were found
-        if (response.data && response.data.player && response.data.player.length > 0) {
-            // Get the first player's image
-            const playerData = response.data.player[0];
-
-            if (playerData.strThumb) {
-                // Return the image URL as JSON
-                return res.json({ imageUrl: playerData.strThumb });
-            }
-        }
-
-        // If no image found, return a default avatar URL
-        res.json({
-            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=37003C&color=fff&size=250`
-        });
-    } catch (error) {
-        console.error('Error finding player image:', error.message);
-        // Return a default avatar URL in case of error
-        res.json({
-            imageUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(req.params.playerName)}&background=37003C&color=fff&size=250`,
-            error: error.message
-        });
-    }
-});
-
-
-app.get('/api/related-news/:keyword', async (req, res) => {
-    try {
-        const { keyword } = req.params;
-        const NEWSDATA_API_KEY = NEWS_DATA_API_KEY; // Thay bằng API key của bạn
-
-        // Use NewsData.io to get related news about the team
-        // Documentation: https://newsdata.io/docs/endpoints
-        const newsResponse = await axios.get('https://newsdata.io/api/1/news', {
-            params: {
-                apikey: NEWSDATA_API_KEY,
-                // category: 'sports',
-                q: keyword, // Search query with team name
-                language: 'en',
-                size: 3
-            }
-        });
-
-        let newsItems = await Promise.all(newsResponse.data.results.map(async (article, index) => {
-            // const html = await fetchFullContent(article.link, article.title)
-            // if (html) {
-            return {
-                id: article.article_id,
-                title: article.title,
-                tag: article.source_id,
-                image: article.image_url || `https://picsum.photos/seed/${keyword}-${index}/500/300`,
-                url: article.link,
-                publishedAt: article.pubDate,
-                description: article.description,
-                content: article.content,
-            }
-            // }
-        }));
-
-        newsItems = newsItems.filter(newsItem => newsItem ? true : false)
-
-        res.json({ news: newsItems });
-    } catch (error) {
-        console.error('Error fetching news from NewsData.io:', error);
-        res.status(500).json({
-            error: 'Failed to fetch related news',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-app.get('/api/news-detail', async (req, res) => {
-    const { articleId } = req.query; // Lấy articleId từ query
-    const NEWSDATA_API_KEY = NEWS_DATA_API_KEY; // Thay bằng API key của bạn
-
-    if (!articleId) {
-        return res.status(400).send({ message: 'Article ID is required' });
-    }
-
-    try {
-        // Gọi API NewsData.io để lấy chi tiết bài viết (news articles)
-        const response = await axios.get('https://newsdata.io/api/1/news', {
-            params: {
-                apikey: NEWSDATA_API_KEY,
-                id: articleId // Lọc bài viết theo articleId (hoặc query phù hợp khác)
-            }
-        });
-
-        // Kiểm tra nếu có bài viết
-        if (response.data.results && response.data.results.length > 0) {
-            const article = response.data.results[0];
-            const html = await fetchFullContent(article.link) // Gọi fetchFullContent để lấy nội dung chi tiết
-
-            res.json({
-                id: articleId,
-                title: article.title,
-                description: article.description,
-                content: article.content,
-                publishedAt: article.pubDate,
-                url: article.link,
-                html
-            });
-        } else {
-            res.status(404).send({ message: 'Article not found' });
-        }
-    } catch (error) {
-        res.status(500).send({ message: 'Error fetching article', error });
-    }
-});
-
-// Endpoint for related videos using YouTube Data API
-app.get('/api/related-videos/:keyword', async (req, res) => {
-    try {
-        const { keyword } = req.params;
-
-        // Use YouTube Data API to get real videos about the team
-        // Documentation: https://developers.google.com/youtube/v3/docs/search/list
-        const youtubeResponse = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-            params: {
-                part: 'snippet',
-                q: `football "${keyword}" highlights`,
-                type: 'video',
-                maxResults: 3,
-                order: 'date',
-                key: YOUTUBE_API_KEY
-            }
-        });
-
-        // Get video details to include duration
-        const videoIds = youtubeResponse.data.items.map(item => item.id.videoId).join(',');
-        const videoDetailsResponse = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
-            params: {
-                part: 'contentDetails,statistics',
-                id: videoIds,
-                key: YOUTUBE_API_KEY
-            }
-        });
-
-        // Create a map of video details
-        const videoDetailsMap = {};
-        videoDetailsResponse.data.items.forEach(item => {
-            videoDetailsMap[item.id] = {
-                duration: formatYouTubeDuration(item.contentDetails.duration),
-                viewCount: formatViewCount(item.statistics.viewCount)
-            };
-        });
-
-        // Transform the response to match our app's format
-        const videoItems = youtubeResponse.data.items.map((item, index) => ({
-            id: item.id.videoId,
-            title: item.snippet.title,
-            tag: 'YouTube',
-            image: item.snippet.thumbnails.high.url,
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-            publishedAt: item.snippet.publishedAt,
-            channelTitle: item.snippet.channelTitle,
-            duration: videoDetailsMap[item.id.videoId]?.duration || '0:00',
-            viewCount: videoDetailsMap[item.id.videoId]?.viewCount || '0 views'
-        }));
-
-        res.json({ videos: videoItems });
-    } catch (error) {
-        console.error('Error fetching videos from YouTube API:', error);
-        res.status(500).json({
-            error: 'Failed to fetch related videos',
-            message: error.response?.data?.message || error.message
-        });
-    }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Battle page */
-app.get('/api/battle', async (req, res) => {
+const getBattleByTeamId = async (req, res) => {
     try {
         const { homeTeamId, awayTeamId, date } = req.query;
 
@@ -447,10 +83,9 @@ app.get('/api/battle', async (req, res) => {
             message: error.response?.data?.message || error.message
         });
     }
-});
+}
 
-// Get match by ID
-app.get('/api/battle/:id', async (req, res) => {
+const getBattleById = async (req, res) => {
     try {
         const { id } = req.params;
         const response = await axios.get(`https://api.football-data.org/v4/matches/${id}`, {
@@ -467,10 +102,9 @@ app.get('/api/battle/:id', async (req, res) => {
             message: error.response?.data?.message || error.message
         });
     }
-});
+}
 
-// Get match statistics
-app.get('/api/battle/:id/stats', async (req, res) => {
+const getBattleStatisticById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -546,10 +180,9 @@ app.get('/api/battle/:id/stats', async (req, res) => {
             message: error.response?.data?.message || error.message
         });
     }
-});
+}
 
-// Get match stats by team IDs
-app.get('/api/battle-stats', async (req, res) => {
+const getBattleStatisticByTeamId = async (req, res) => {
     try {
         const { homeTeamId, awayTeamId } = req.query;
 
@@ -608,10 +241,9 @@ app.get('/api/battle-stats', async (req, res) => {
             message: error.message
         });
     }
-});
+}
 
-// Get match report
-app.get('/api/battle/:id/report', async (req, res) => {
+const getBattleReportById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -646,10 +278,9 @@ app.get('/api/battle/:id/report', async (req, res) => {
             message: error.response?.data?.message || error.message
         });
     }
-});
+}
 
-// Get match report by team IDs
-app.get('/api/battle-report', async (req, res) => {
+const getBattleReportByTeamId = async (req, res) => {
     try {
         const { homeTeamId, awayTeamId } = req.query;
 
@@ -692,10 +323,9 @@ app.get('/api/battle-report', async (req, res) => {
             message: error.message
         });
     }
-});
+}
 
-// Get match commentary
-app.get('/api/battle/:id/commentary', async (req, res) => {
+const getBattleCommentaryByBattleId = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -784,10 +414,9 @@ app.get('/api/battle/:id/commentary', async (req, res) => {
             message: error.response?.data?.message || error.message
         });
     }
-});
+}
 
-// Get match commentary by team IDs
-app.get('/api/battle-commentary', async (req, res) => {
+const getBattleCommentaryByTeamId = async (req, res) => {
     try {
         const { homeTeamId, awayTeamId } = req.query;
 
@@ -832,10 +461,9 @@ app.get('/api/battle-commentary', async (req, res) => {
             message: error.message
         });
     }
-});
+}
 
-// Get battle highlights
-app.get('/api/battle-highlights', async (req, res) => {
+const getBattleHighlightByTeamId = async (req, res) => {
     try {
         const { homeTeamId, awayTeamId } = req.query;
 
@@ -922,10 +550,9 @@ app.get('/api/battle-highlights', async (req, res) => {
             ]
         });
     }
-});
+}
 
-// Get head-to-head data
-app.get('/api/head-to-head', async (req, res) => {
+const getBattleHeadToHeadByTeamId = async (req, res) => {
     try {
         const { team1, team2 } = req.query;
 
@@ -1164,147 +791,9 @@ app.get('/api/head-to-head', async (req, res) => {
             message: error.message
         });
     }
-});
+}
 
-// Get related news
-app.get('/api/related-news-battle', async (req, res) => {
-    try {
-        const { team1, team2 } = req.query;
-
-        if (!team1 && !team2) {
-            return res.status(400).json({ error: 'Missing team names' });
-        }
-
-        // Use newsdata.io API if you have a key
-        if (NEWS_DATA_API_KEY) {
-            const searchQuery = team2 ? `${team1} ${team2} football` : `${team1} football`;
-
-            const newsResponse = await axios.get('https://newsdata.io/api/1/news', {
-                params: {
-                    apikey: NEWS_DATA_API_KEY,
-                    q: searchQuery,
-                    language: 'en',
-                    size: 3
-                }
-            });
-
-            if (newsResponse.data.results && newsResponse.data.results.length > 0) {
-                const news = newsResponse.data.results.slice(0, 3).map((article, index) => ({
-                    id: article.article_id,
-                    title: article.title,
-                    image: article.image_url || `https://picsum.photos/seed/news-${index}/500/300`,
-                    source: article.source_id || "Sports News",
-                    url: article.link,
-                    description: article.description
-                }));
-
-                return res.json({ news });
-            }
-        }
-
-        // If no API key or no results, return mock data
-        res.json({
-            news: [
-                {
-                    id: 1,
-                    title: `LIVE: ${team1} updates: Latest team news and injury updates`,
-                    image: `https://picsum.photos/seed/news-${team1}-1/500/300`,
-                    source: "Live blog"
-                },
-                {
-                    id: 2,
-                    title: team2 ? `${team1} vs ${team2}: Match Preview` : `${team1}: Manager press conference highlights`,
-                    image: `https://picsum.photos/seed/news-${team1}-2/500/300`,
-                    source: "Live blog"
-                },
-                {
-                    id: 3,
-                    title: team2 ? `Premier League roundup: ${team1} vs ${team2} preview` : `${team1} training session ahead of weekend fixture`,
-                    image: `https://picsum.photos/seed/news-${team1}-3/500/300`,
-                    source: "Live blog"
-                }
-            ]
-        });
-    } catch (error) {
-        console.error('Error fetching related news:', error);
-        res.status(500).json({
-            error: 'Failed to fetch related news',
-            message: error.message
-        });
-    }
-});
-
-// Get related videos
-app.get('/api/related-videos-battle', async (req, res) => {
-    try {
-        const { team1, team2 } = req.query;
-
-        if (!team1 && !team2) {
-            return res.status(400).json({ error: 'Missing team names' });
-        }
-
-        // Use YouTube API if you have a key
-        if (YOUTUBE_API_KEY) {
-            const searchQuery = team2 ? `${team1} ${team2} football` : `${team1} football`;
-
-            const youtubeResponse = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-                params: {
-                    part: 'snippet',
-                    q: searchQuery,
-                    type: 'video',
-                    maxResults: 3,
-                    order: 'relevance',
-                    key: YOUTUBE_API_KEY
-                }
-            });
-
-            if (youtubeResponse.data.items && youtubeResponse.data.items.length > 0) {
-                const videos = youtubeResponse.data.items.map((item, index) => ({
-                    id: index + 1,
-                    title: item.snippet.title,
-                    image: item.snippet.thumbnails.high.url,
-                    source: "YouTube",
-                    url: `https://www.youtube.com/watch?v=${item.id.videoId}`
-                }));
-
-                return res.json({ videos });
-            }
-        }
-
-        // If no YouTube API key or no results, return mock data
-        res.json({
-            videos: [
-                {
-                    id: 1,
-                    title: team2 ? `${team1} vs ${team2}: Match Preview` : `${team1}: Season Highlights`,
-                    image: `https://picsum.photos/seed/video-${team1}-1/500/300`,
-                    source: "YouTube"
-                },
-                {
-                    id: 2,
-                    title: `${team1} Manager Pre-Match Interview`,
-                    image: `https://picsum.photos/seed/video-${team1}-2/500/300`,
-                    source: "YouTube"
-                },
-                {
-                    id: 3,
-                    title: team2 ? `${team2} Training Session Highlights` : `${team1} Player Interviews`,
-                    image: `https://picsum.photos/seed/video-${team1}-3/500/300`,
-                    source: "YouTube"
-                }
-            ]
-        });
-    } catch (error) {
-        console.error('Error fetching related videos:', error);
-        res.status(500).json({
-            error: 'Failed to fetch related videos',
-            message: error.message
-        });
-    }
-});
-
-// Get lineup for a match
-app.get("/api/battle/:id/lineup", async (req, res) => {
+const getBattleLineupById = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -1399,11 +888,18 @@ app.get("/api/battle/:id/lineup", async (req, res) => {
             message: error.message
         });
     }
-})
+}
 
-
-app.get("/", (request, response) => {
-    response.status(200).json({ message: "Hello from Football App API!" });
-});
-
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+module.exports = {
+    getBattleByTeamId,
+    getBattleById,
+    getBattleStatisticById,
+    getBattleStatisticByTeamId,
+    getBattleReportById,
+    getBattleReportByTeamId,
+    getBattleCommentaryByBattleId,
+    getBattleCommentaryByTeamId,
+    getBattleHighlightByTeamId,
+    getBattleHeadToHeadByTeamId,
+    getBattleLineupById
+}

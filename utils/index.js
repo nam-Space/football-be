@@ -6,6 +6,8 @@ const FOOTBALL_API_KEY = process.env.FOOTBALL_DATA_API_KEY
 const YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
 
+const NEWS_DATA_API_KEY = process.env.NEWS_DATA_API_KEY
+
 const PORT = process.env.PORT || 8080;
 
 module.exports = {
@@ -13,5 +15,6 @@ module.exports = {
     FOOTBALL_API_KEY,
     YOUTUBE_API_KEY,
     YOUTUBE_SEARCH_URL,
+    NEWS_DATA_API_KEY,
     PORT
 }
