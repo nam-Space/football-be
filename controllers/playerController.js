@@ -101,4 +101,3 @@ module.exports = {
     getPlayerStats,
     getPlayerImage
 };
-
