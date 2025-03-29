@@ -14,15 +14,13 @@ const getCompetitionDetail = async (req, res) => {
       console.error("Error fetching competition detail:", error.message);
       res.status(500).json({ error: "Failed to fetch competition detail" });
     }
-  };
-  
-  // Lấy bảng xếp hạng
+};
+
+// Lấy bảng xếp hạng
 const getCompetitionStandingDetail = async (req, res) => {
     const { competitionId = 2021 } = req.query;
-    const params = { ...req.query }
-    delete params.competitionId
-
-    // const PREMIER_LEAGUE_ID = 2021; // Premier League competition ID
+    const params = { ...req.query };
+    delete params.competitionId;
 
     try {
         const response = await axios.get(`${FOOTBALL_API_URL}/competitions/${competitionId}/standings`, {
@@ -34,7 +32,7 @@ const getCompetitionStandingDetail = async (req, res) => {
         console.error('Error fetching standings:', error.message);
         res.status(500).json({ error: 'Failed to fetch standings' });
     }
-}
+};
 
 // Lấy danh sách vua phá lưới
 const getCompetitionScoreDetail = async (req, res) => {
@@ -52,10 +50,41 @@ const getCompetitionScoreDetail = async (req, res) => {
       console.error("Error fetching scorers:", error.message);
       res.status(500).json({ error: "Failed to fetch scorers" });
     }
-  };
-  
+};
+
+// Lấy danh sách trận đấu
+const getCompetitionMatches = async (req, res) => {
+    try {
+        const { competitionId = 2021, matchday, dateFrom, dateTo } = req.query;
+
+        const params = {};
+        if (matchday) params.matchday = matchday;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+
+        const response = await axios.get(
+            `${FOOTBALL_API_URL}/competitions/${competitionId}/matches`,
+            {
+                params,
+                headers: {
+                    'X-Auth-Token': FOOTBALL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching competition matches:', error);
+        res.status(500).json({
+            error: 'Failed to fetch competition matches',
+            message: error.response?.data?.message || error.message
+        });
+    }
+};
+
 module.exports = {
     getCompetitionDetail,
     getCompetitionStandingDetail,
     getCompetitionScoreDetail,
+    getCompetitionMatches
 };
