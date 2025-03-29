@@ -23,7 +23,7 @@ const getAllMatchDetail = async (req, res) => {
 
         // Lấy dữ liệu trận đấu từ API
         const matchResponse = await axios.get(`${FOOTBALL_API_URL}/matches/${matchId}`, {
-            headers: { "X-Auth-Token": API_KEY },
+            headers: { "X-Auth-Token": FOOTBALL_API_KEY },
         });
 
         if (!matchResponse.data) {
@@ -40,12 +40,12 @@ const getAllMatchDetail = async (req, res) => {
 
         // Gọi API để lấy danh sách cầu thủ của đội chủ nhà
         const homeTeamResponse = await axios.get(`${FOOTBALL_API_URL}/teams/${homeTeamId}`, {
-            headers: { "X-Auth-Token": API_KEY },
+            headers: { "X-Auth-Token": FOOTBALL_API_KEY },
         });
 
         // Gọi API để lấy danh sách cầu thủ của đội khách
         const awayTeamResponse = await axios.get(`${FOOTBALL_API_URL}/teams/${awayTeamId}`, {
-            headers: { "X-Auth-Token": API_KEY },
+            headers: { "X-Auth-Token": FOOTBALL_API_KEY },
         });
 
         res.json({
