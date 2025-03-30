@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.get('/', getAllTeam);
 router.get('/:teamId', getTeamDetail);
-router.get('/matches/:teamId', getTeamMatches);
+router.get('/team-matches/:teamId', getTeamMatches);
 
 module.exports = router;
