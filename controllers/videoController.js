@@ -8,7 +8,7 @@ const getVideos = async (req, res) => {
         const response = await axios.get(YOUTUBE_SEARCH_URL, {
             params: {
                 part: "snippet",
-                q: "Premier League highlights",
+                q: "epl highlights k+ sport",
                 maxResults: 10,
                 type: "video",
                 key: YOUTUBE_API_KEY,

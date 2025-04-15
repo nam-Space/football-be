@@ -1,6 +1,7 @@
 const { default: axios } = require("axios");
 const { NEWS_DATA_API_KEY } = require("../utils");
 const { fetchFullContent } = require("../utils/fetchFullContent");
+const cheerio = require('cheerio');
 
 const getNews = async (req, res) => {
     try {
@@ -12,7 +13,40 @@ const getNews = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch news' });
     }
 }
+// const getNews = async (req, res) => {
+//     try {
+//         const { data: html } = await axios.get("https://www.bbc.com/sport/football/premier-league", {
+//             headers: { "User-Agent": "Mozilla/5.0" }
+//         });
 
+//         const $ = cheerio.load(html);
+//         const articles = [];
+
+//         $("a.gs-c-promo-heading").each((i, el) => {
+//             const title = $(el).text().trim();
+//             const href = $(el).attr("href");
+//             const url = href.startsWith("http") ? href : `https://www.bbc.com${href}`;
+//             const container = $(el).closest(".gs-c-promo");
+//             const image = container.find("img").attr("src") || null;
+
+//             if (title && url) {
+//                 articles.push({
+//                     id: i,
+//                     title,
+//                     url,
+//                     image,
+//                     description: null,
+//                     source: "BBC Sport"
+//                 });
+//             }
+//         });
+
+//         res.json({ news: articles.slice(0, 8) }); // lấy 8 bài đầu
+//     } catch (err) {
+//         console.error("❌ Failed to scrape BBC:", err.message);
+//         res.status(500).json({ error: "Failed to scrape BBC Sport Premier League" });
+//     }
+// };
 const getRelatedNews = async (req, res) => {
     try {
         const { keyword } = req.params;
