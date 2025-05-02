@@ -120,7 +120,7 @@ const updateUser = async (req, res) => {
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path);
             updateData.avatar = result.secure_url; // Trả về URL HTTP
-        }        
+        }
 
         // Cập nhật user với dữ liệu từ FormData
         Object.keys(updateData).forEach((key) => {
