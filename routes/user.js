@@ -1,11 +1,12 @@
 const express = require('express');
-const { loginUser, createUser, getUserAccount, logoutUser, getAllUsers, updateUser, deleteUser, updateUserFavouriteTeam } = require('../controllers/userController');
+const { loginUser, createUser, getUserAccount, logoutUser, getAllUsers, updateUser, deleteUser, updateUserFavouriteTeam, loginAdmin } = require('../controllers/userController');
 const { verifyToken } = require('../middlewares/verifyToken');
 const upload = require("../middlewares/upload");
 const router = express.Router()
 
 router.get('/', getAllUsers)
 router.post('/login', loginUser)
+router.post('/login-admin', loginAdmin)
 router.post('/register', createUser)
 router.get('/logout', logoutUser)
 router.get('/account', getUserAccount)
