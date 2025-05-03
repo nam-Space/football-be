@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const generateTokenAndSetCookie = require("../utils/generateTokenAndSetCookie");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("../utils/cloudinaryConfig");
+const { ROLE } = require("../constants/role");
 
 const createUser = async (req, res) => {
     try {
@@ -49,6 +50,7 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body
         const user = await User.findOne({ email })
+
         if (!user) {
             return res.status(400).json({ error: 'Invalid email' })
         }
@@ -67,6 +69,45 @@ const loginUser = async (req, res) => {
                 address: user.address,
                 email: user.email,
                 role: user.role,
+                avatar: user?.avatar,
+                team: user?.team,
+                token
+            }
+        })
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+        console.log(error.message)
+    }
+}
+
+const loginAdmin = async (req, res) => {
+    try {
+        const { email, password } = req.body
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid email' })
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(password, user.password)
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ error: 'Invalid password' })
+        }
+        if (user.role === ROLE.USER) {
+            return res.status(400).json({ error: 'You are unauthorized!' })
+        }
+        const token = generateTokenAndSetCookie(user._id, res)
+
+        res.status(200).json({
+            data: {
+                _id: user._id,
+                name: user.name,
+                gender: user.gender,
+                address: user.address,
+                email: user.email,
+                role: user.role,
+                avatar: user?.avatar,
+                team: user?.team,
                 token
             }
         })
@@ -222,6 +263,7 @@ const getUserAccount = async (req, res) => {
 module.exports = {
     createUser,
     loginUser,
+    loginAdmin,
     logoutUser,
     getAllUsers,
     updateUser,
