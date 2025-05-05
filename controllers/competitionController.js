@@ -14,15 +14,13 @@ const getCompetitionDetail = async (req, res) => {
       console.error("Error fetching competition detail:", error.message);
       res.status(500).json({ error: "Failed to fetch competition detail" });
     }
-  };
-  
-  // Lấy bảng xếp hạng
+};
+
+// Lấy bảng xếp hạng
 const getCompetitionStandingDetail = async (req, res) => {
     const { competitionId = 2021 } = req.query;
-    const params = { ...req.query }
-    delete params.competitionId
-
-    // const PREMIER_LEAGUE_ID = 2021; // Premier League competition ID
+    const params = { ...req.query };
+    delete params.competitionId;
 
     try {
         const response = await axios.get(`${FOOTBALL_API_URL}/competitions/${competitionId}/standings`, {
@@ -34,7 +32,7 @@ const getCompetitionStandingDetail = async (req, res) => {
         console.error('Error fetching standings:', error.message);
         res.status(500).json({ error: 'Failed to fetch standings' });
     }
-}
+};
 
 // Lấy danh sách vua phá lưới
 const getCompetitionScoreDetail = async (req, res) => {

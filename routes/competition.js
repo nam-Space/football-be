@@ -7,7 +7,7 @@ const {
     getCompetitionTeams,
 } = require('../controllers/competitionController');
 
-const router = express.Router()
+const router = express.Router();
 
 router.get('/', getCompetitionDetail);
 router.get('/standings', getCompetitionStandingDetail);
