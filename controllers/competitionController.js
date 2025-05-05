@@ -52,10 +52,70 @@ const getCompetitionScoreDetail = async (req, res) => {
       console.error("Error fetching scorers:", error.message);
       res.status(500).json({ error: "Failed to fetch scorers" });
     }
-  };
-  
+};
+
+// Lấy danh sách trận đấu
+const getCompetitionMatches = async (req, res) => {
+    try {
+        const { competitionId = 2021, matchday, dateFrom, dateTo } = req.query;
+
+        const params = {};
+        if (matchday) params.matchday = matchday;
+        if (dateFrom) params.dateFrom = dateFrom;
+        if (dateTo) params.dateTo = dateTo;
+
+        const response = await axios.get(
+            `${FOOTBALL_API_URL}/competitions/${competitionId}/matches`,
+            {
+                params,
+                headers: {
+                    'X-Auth-Token': FOOTBALL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching competition matches:', error);
+        res.status(500).json({
+            error: 'Failed to fetch competition matches',
+            message: error.response?.data?.message || error.message
+        });
+    }
+};
+
+// Lấy danh sách đội bóng trong giải đấu
+const getCompetitionTeams = async (req, res) => {
+    try {
+        const { competitionId = 2021, season } = req.query;
+
+        const params = {};
+        if (season) params.season = season;
+
+        const response = await axios.get(
+            `${FOOTBALL_API_URL}/competitions/${competitionId}/teams`,
+            {
+                params,
+                headers: {
+                    'X-Auth-Token': FOOTBALL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching competition teams:', error);
+        res.status(500).json({
+            error: 'Failed to fetch competition teams',
+            message: error.response?.data?.message || error.message
+        });
+    }
+};
+
 module.exports = {
     getCompetitionDetail,
     getCompetitionStandingDetail,
     getCompetitionScoreDetail,
+    getCompetitionMatches,
+    getCompetitionTeams
 };
