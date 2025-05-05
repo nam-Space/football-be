@@ -82,9 +82,38 @@ const getCompetitionMatches = async (req, res) => {
     }
 };
 
+// Lấy danh sách đội bóng trong giải đấu
+const getCompetitionTeams = async (req, res) => {
+    try {
+        const { competitionId = 2021, season } = req.query;
+
+        const params = {};
+        if (season) params.season = season;
+
+        const response = await axios.get(
+            `${FOOTBALL_API_URL}/competitions/${competitionId}/teams`,
+            {
+                params,
+                headers: {
+                    'X-Auth-Token': FOOTBALL_API_KEY
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching competition teams:', error);
+        res.status(500).json({
+            error: 'Failed to fetch competition teams',
+            message: error.response?.data?.message || error.message
+        });
+    }
+};
+
 module.exports = {
     getCompetitionDetail,
     getCompetitionStandingDetail,
     getCompetitionScoreDetail,
-    getCompetitionMatches
+    getCompetitionMatches,
+    getCompetitionTeams
 };

@@ -3,8 +3,8 @@ const { getTeamDetail, getAllTeam, getTeamMatches } = require('../controllers/te
 
 const router = express.Router();
 
-router.get('/', getAllTeam);
-router.get('/:teamId', getTeamDetail);
-router.get('/team-matches/:teamId', getTeamMatches);
+router.get('/', getAllTeam)
+router.get('/:teamId', getTeamDetail)
+router.get('/team-matches/:teamId', getTeamMatches)
 
 module.exports = router;
